@@ -63,7 +63,6 @@ class OTP{
         	}
 
         	for (int i=0; i<legel_cnt; i++){
-        		// Something Wrong here for update
         		pre_xy = *(ML+i);
                 pre_x = pre_xy/8;
                 pre_y = pre_xy%8;
@@ -74,7 +73,6 @@ class OTP{
                 // number of simulation in a node
                 for (int i=0; i<1000; i++){
                     B.simulate_update(x,y);
-                    //simulate_play(pre_x,pre_y);
                 	while (pass!=2){
                 		xy = random_move();
                 		if (xy==64){
@@ -86,7 +84,6 @@ class OTP{
                 		x = xy/8;
                 		y = xy%8;
                         B.simulate_update(x,y);
-                		//simulate_play(x,y);
                 	}
                 	score = B.get_score();
                     sum_score += score;
@@ -103,25 +100,13 @@ class OTP{
                 }
 			}
         }
-        	//for all valid move
-        	//		random_choice to the end and calculate the total win-rate
-        	//		batch(1 5 10 50) calculate and update UCB
-        	return best_move;
-        //return MLED==ML?64:*random_choice(ML,MLED);
+    	return best_move;
     }
 
     int random_move(){
     	int K[64],*KED(B.get_valid_move(K));
     	return KED==K?64:*random_choice(K,KED);
 	}
-
-    void simulate_play(int x, int y){
-        if(B.is_game_over()==0&&B.is_valid_move(x,y)){
-            B.simulate_update(x,y);
-        }else{
-            fputs("wrong play.\n",stderr);
-        }
-    }
 
     //update board and history in do_play
     void do_play(int x,int y){
