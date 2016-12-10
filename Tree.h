@@ -10,7 +10,7 @@ public:
    Tree(); // constructor
    void set_branch_size(int);
    void update(int, int, int);
-   void update_branch_ucb(int);
+   void update_branch_ucb_acc(int, int);
    void set_root(unsigned char[][8]);
    void generate_new_branch(unsigned char[][8], int);
    void forward(int);
@@ -61,14 +61,15 @@ void Tree::update(int win, int loss, int total){
    }
 }
 
-void Tree::update_branch_ucb(int except_idx){
-   TreeNode * tmpNode;
-   for (int i=0; i<(*nowPtr).branch_size; i++){
-      if(i!=except_idx){
-         tmpNode = (*nowPtr).branch[except_idx];
-         (*nowPtr).branch_ucb[i] = (*tmpNode).win/(*tmpNode).total + 1.18*sqrt(log((*nowPtr).total/(*tmpNode).total));
-      }
+
+void Tree::update_branch_ucb_acc(int size, int idx){
+   TreeNode *tmpNode;
+   for (int i=0; i<size; i++){
+      tmpNode = nowPtr->branch[i];
+      nowPtr->branch_ucb[i] = (double)tmpNode->win/tmpNode->total + 1.18*sqrt(log(nowPtr->total)/tmpNode->total);
    }
+   tmpNode = nowPtr->branch[idx];
+   nowPtr->branch_ucb[idx] = (double) tmpNode->win/tmpNode->total;
 }
 
 void Tree::forward(int index){
@@ -97,7 +98,7 @@ int Tree::get_branch_size(){
 
 int Tree::get_highest_ucb_index(){
    int idx=0;
-   int tmp=0;
+   double tmp=0;
    for(int i=0; i<(*nowPtr).branch_size; i++){
       if(tmp < (*nowPtr).branch_ucb[i]){
          tmp = (*nowPtr).branch_ucb[i];
@@ -109,7 +110,7 @@ int Tree::get_highest_ucb_index(){
 
 int Tree::get_highest_acc_index(){
    int idx=0;
-   int tmp=0;
+   double tmp=0;
    for(int i=0; i<(*nowPtr).branch_size; i++){
       if(tmp < (*nowPtr).branch_acc[i]){
          tmp = (*nowPtr).branch_acc[i];

@@ -36,18 +36,11 @@ class OTP{
     }
     //choose the best move in do_genmove
     int do_genmove(){
-        /*
-          todo: use Monte-Carlo to choose move
-        */
+        
         int ML[64],*MLED(B.get_valid_move(ML));
         int legel_cnt=0;
-        unsigned char original_map[8][8];
-        int pre_xy, xy;
-        int pass;
-        int score=0;
-        int win, loss, sum_score, best_win=0, best_move=0;
         int node_ucb_list[64];
-
+        int best_move;
         // If there is no legel move, return directly
         if (MLED==ML){
         	do_play(8,0);
@@ -60,15 +53,19 @@ class OTP{
                 legel_cnt++;
             }
             tree.set_branch_size(legel_cnt);
-            best_move = initial_sampling(tree, ML);
+            initial_sampling(tree, ML);
+            for (int i=0; i<20; i++){
+                re_simulation(tree);
+            }
         }
-    	return best_move;
+
+        
+    	return 26;
     }
 
-    int initial_sampling(Tree tree, int* ML){
+    void initial_sampling(Tree tree, int* ML){
         int initial_sampling_size=1000;
-        int pre_xy, xy, win, loss, pass, sum_score=0;
-        int best_win=0, best_move=0, score;
+        int pre_xy, xy, win, loss, pass, score;
 
         // reset map
         for (int i=0; i<8; i++){
@@ -91,17 +88,14 @@ class OTP{
 
                 while (pass!=2){
                     xy = random_move();
-                    if (xy==64){
-                        pass += 1;
-                    }
-                    else{
+                    if (xy==64)
+                        pass ++;
+                    else
                         pass = 0;
-                    }
                     B.simulate_update(xy/8,xy%8);
                 }
 
                 score = B.get_score();
-                sum_score += score;
                 if (score>0)
                     win++;
                 else
@@ -110,21 +104,18 @@ class OTP{
                 pass = 0;
             }
             tree.update(win, loss, win+loss);
-            (tree.nowPtr)->branch_ucb[i] = (float) win/(win+loss) + 1.18*sqrt(log(tree.get_branch_size()*initial_sampling_size)/initial_sampling_size);
-            (tree.nowPtr)->branch_acc[i] = (float) win/(win+loss);
-            
-            if (best_win<win){
-                best_win = win;
-                best_move = *(ML+i);
-            }
+            (tree.nowPtr)->branch_ucb[i] = (double) win/(win+loss) + 1.18*sqrt(log(tree.get_branch_size()*initial_sampling_size)/initial_sampling_size);
+            (tree.nowPtr)->branch_acc[i] = (double) win/(win+loss);
+            tree.forward(i);
+            tree.update(win, loss, win+loss);
+            tree.backtract();
         }
-        return best_move;
     }
 
     void re_simulation(Tree tree){
         int idx;
         int best_ucb=0;
-        int redo_size=100;
+        int redo_size=200;
         int pass=0, win=0, loss=0, xy;
         int ucb, acc;
 
@@ -165,8 +156,7 @@ class OTP{
 
         // update tree->nowPtr
         tree.update(win, loss, win+loss);
-        tree.update_branch_ucb(idx);
-        
+        tree.update_branch_ucb_acc(tree.get_branch_size(), idx);
     }
 
     int random_move(){

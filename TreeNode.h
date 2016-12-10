@@ -18,7 +18,7 @@ class TreeNode{
    unsigned char map[8][8];
    int win, loss, total;
    int branch_size;
-   float branch_ucb[64];
-   float branch_acc[64];
+   double branch_ucb[64];
+   double branch_acc[64];
    int have_branch;
 };
