@@ -1,11 +1,12 @@
 #include"board.h"
+#include"Tree.h"
 #include<random>
 #ifdef _WIN32
 #include<chrono>
 #endif
 #include<cstring>
 #include<string>
-
+#include<math.h>
 
 constexpr char m_tolower(char c){
     return c+('A'<=c&&c<='Z')*('a'-'A');
@@ -40,67 +41,132 @@ class OTP{
         */
         int ML[64],*MLED(B.get_valid_move(ML));
         int legel_cnt=0;
-        unsigned char tmp[8][8];
-        int pre_xy, pre_x, pre_y;
-        int xy;
-        int x, y;
+        unsigned char original_map[8][8];
+        int pre_xy, xy;
         int pass;
         int score=0;
         int win, loss, sum_score, best_win=0, best_move=0;
+        int node_ucb_list[64];
+
+        // If there is no legel move, return directly
         if (MLED==ML){
         	do_play(8,0);
         	return 64;
         }
         else{
-        	for (int i=0; i<8; i++){
-            	for (int j=0; j<8; j++){
-            		tmp[i][j] = B.a[i][j];
-            	}
+            Tree tree;
+            tree.set_root(B.a);
+            while (*MLED != *(ML+legel_cnt)){
+                legel_cnt++;
             }
-
-        	while(*MLED != *(ML+legel_cnt)){
-        		legel_cnt += 1;
-        	}
-
-        	for (int i=0; i<legel_cnt; i++){
-        		pre_xy = *(ML+i);
-                pre_x = pre_xy/8;
-                pre_y = pre_xy%8;
-                pass = 0;
-                win = 0;
-                loss = 0;
-                sum_score = 0;
-                // number of simulation in a node
-                for (int i=0; i<1000; i++){
-                    B.simulate_update(x,y);
-                	while (pass!=2){
-                		xy = random_move();
-                		if (xy==64){
-                			pass += 1;
-                		}
-                		else{
-                			pass = 0;
-                		}
-                		x = xy/8;
-                		y = xy%8;
-                        B.simulate_update(x,y);
-                	}
-                	score = B.get_score();
-                    sum_score += score;
-                    if (score>0)
-                        win++;
-                    else
-                        loss++;
-                    B.reset_board(tmp);
-                    pass = 0;
-                }
-                if (best_win<win){
-                    best_win = win;
-                    best_move = *(ML+i);
-                }
-			}
+            tree.set_branch_size(legel_cnt);
+            best_move = initial_sampling(tree, ML);
         }
     	return best_move;
+    }
+
+    int initial_sampling(Tree tree, int* ML){
+        int initial_sampling_size=1000;
+        int pre_xy, xy, win, loss, pass, sum_score=0;
+        int best_win=0, best_move=0, score;
+
+        // reset map
+        for (int i=0; i<8; i++){
+            for (int j=0; j<8; j++){
+                B.a[i][j] = (tree.nowPtr)->map[i][j];
+            }
+        }
+
+        for (int i=0; i<tree.get_branch_size(); i++){
+            pre_xy = *(ML+i);
+            win = 0;
+            loss = 0;
+            pass = 0;
+
+            // number of simulation in a node
+            for (int s=0; s<initial_sampling_size; s++){
+                B.simulate_update(pre_xy/8,pre_xy%8);
+                
+                tree.generate_new_branch(B.a, i);
+
+                while (pass!=2){
+                    xy = random_move();
+                    if (xy==64){
+                        pass += 1;
+                    }
+                    else{
+                        pass = 0;
+                    }
+                    B.simulate_update(xy/8,xy%8);
+                }
+
+                score = B.get_score();
+                sum_score += score;
+                if (score>0)
+                    win++;
+                else
+                    loss++;
+                B.reset_board((tree.nowPtr)->map);
+                pass = 0;
+            }
+            tree.update(win, loss, win+loss);
+            (tree.nowPtr)->branch_ucb[i] = (float) win/(win+loss) + 1.18*sqrt(log(tree.get_branch_size()*initial_sampling_size)/initial_sampling_size);
+            (tree.nowPtr)->branch_acc[i] = (float) win/(win+loss);
+            
+            if (best_win<win){
+                best_win = win;
+                best_move = *(ML+i);
+            }
+        }
+        return best_move;
+    }
+
+    void re_simulation(Tree tree){
+        int idx;
+        int best_ucb=0;
+        int redo_size=100;
+        int pass=0, win=0, loss=0, xy;
+        int ucb, acc;
+
+        // get the best node via ucb
+        idx = tree.get_highest_ucb_index();
+        
+        tree.forward(idx);
+        // reset map
+        for (int i=0; i<8; i++){
+            for (int j=0; j<8; j++){
+                B.a[i][j] = (tree.nowPtr)->map[i][j];
+            }
+        }
+
+        // simulation
+        for (int i=0; i<redo_size; i++){
+            while (pass!=2){
+                xy = random_move();
+                if (xy==64){
+                    pass += 1;
+                }
+                else{
+                    pass = 0;
+                }
+                B.simulate_update(xy/8,xy%8);
+            }
+
+            if (B.get_score()>0)
+                win++;
+            else
+                loss++;
+            B.reset_board((tree.nowPtr)->map);
+            pass = 0;
+        }
+        // update tree->board[i]
+        tree.update(win, loss, win+loss);
+        tree.backtract();
+
+        // update tree->nowPtr
+        tree.update(win, loss, win+loss);
+        tree.update_branch_ucb(idx);
+        
     }
 
     int random_move(){
@@ -156,16 +222,11 @@ public:
                 return true;
             }
             case my_hash("genmove"):{
-            	
                 int xy = do_genmove();
                 int x = xy/8, y = xy%8;
                 do_play(x,y);
                 B.show_board(myerr);
                 sprintf(out,"genmove %d %d",x,y);
-                return true;
-                
-                B.show_board(myerr);
-                
                 return true;
             }
             case my_hash("undo"):
