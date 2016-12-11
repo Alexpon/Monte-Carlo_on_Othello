@@ -35,7 +35,7 @@ public:
         {0,0,0,0,0,0,0,0,},
     },my_tile(1),op_tile(2),pass(0){}
 
-    void reset_board(unsigned char now_board[][8]){
+    void reset_board(unsigned char now_board[][8], int m){
         int cnt=0;
         for (int i=0; i<8; i++){
         	for (int j=0; j<8; j++){
@@ -44,7 +44,7 @@ public:
         		a[i][j] = now_board[i][j];
         	}
         }
-        my_tile = cnt % 2 + 1;
+        my_tile = m;
         op_tile = 3 - my_tile;
         pass = 0;
     }

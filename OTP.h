@@ -48,7 +48,7 @@ class OTP{
         }
         else{
             Tree tree;
-            tree.set_root(B.a);
+            tree.set_root(B.a, B.get_my_tile());
             while (*MLED != *(ML+legel_cnt)){
                 legel_cnt++;
             }
@@ -57,10 +57,12 @@ class OTP{
             for (int i=0; i<20; i++){
                 re_simulation(tree);
             }
+            best_move = ML[tree.get_highest_acc_index()];
+            B.reset_board((tree.nowPtr->map), (tree.nowPtr)->my_tile);
         }
 
         
-    	return 26;
+    	return best_move;
     }
 
     void initial_sampling(Tree tree, int* ML){
@@ -100,7 +102,7 @@ class OTP{
                     win++;
                 else
                     loss++;
-                B.reset_board((tree.nowPtr)->map);
+                B.reset_board((tree.nowPtr)->map, (tree.nowPtr)->my_tile);
                 pass = 0;
             }
             tree.update(win, loss, win+loss);
@@ -147,7 +149,7 @@ class OTP{
                 win++;
             else
                 loss++;
-            B.reset_board((tree.nowPtr)->map);
+            B.reset_board((tree.nowPtr)->map, (tree.nowPtr)->my_tile);
             pass = 0;
         }
         // update tree->board[i]

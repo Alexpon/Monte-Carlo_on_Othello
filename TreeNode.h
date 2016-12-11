@@ -21,4 +21,5 @@ class TreeNode{
    double branch_ucb[64];
    double branch_acc[64];
    int have_branch;
+   int my_tile;
 };

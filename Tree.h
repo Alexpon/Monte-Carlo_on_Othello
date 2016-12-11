@@ -8,10 +8,10 @@ class Tree{
 
 public:
    Tree(); // constructor
+   void set_root(unsigned char[][8], int);
    void set_branch_size(int);
    void update(int, int, int);
    void update_branch_ucb_acc(int, int);
-   void set_root(unsigned char[][8]);
    void generate_new_branch(unsigned char[][8], int);
    void forward(int);
    void backtract();
@@ -29,13 +29,14 @@ Tree::Tree(){
    nowPtr=0;
 }
 
-void Tree::set_root(unsigned char map[][8]){
+void Tree::set_root(unsigned char map[][8], int my_tile){
    nowPtr = new TreeNode(0);
    for (int i=0; i<8; i++){
       for (int j=0; j<8; j++){
          nowPtr->map[i][j] = map[i][j];
       }
    }
+   nowPtr -> my_tile = my_tile;
 }
 
 void Tree::generate_new_branch(unsigned char map[][8], int index){
@@ -69,7 +70,7 @@ void Tree::update_branch_ucb_acc(int size, int idx){
       nowPtr->branch_ucb[i] = (double)tmpNode->win/tmpNode->total + 1.18*sqrt(log(nowPtr->total)/tmpNode->total);
    }
    tmpNode = nowPtr->branch[idx];
-   nowPtr->branch_ucb[idx] = (double) tmpNode->win/tmpNode->total;
+   nowPtr->branch_acc[idx] = (double) tmpNode->win/tmpNode->total;
 }
 
 void Tree::forward(int index){
