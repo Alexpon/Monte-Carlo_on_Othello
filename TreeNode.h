@@ -4,7 +4,7 @@ class TreeNode{
   
   public:
    // constructor
-    TreeNode(TreeNode *p):parent(p){ 
+    TreeNode(TreeNode *p, const int &d):parent(p), id(d){ 
       win = 0;
       loss = 0;
       total = 0;
@@ -16,6 +16,7 @@ class TreeNode{
    TreeNode *branch[64];
    TreeNode *parent;
    unsigned char map[8][8];
+   int id;
    int win, loss, total;
    int branch_size;
    double branch_ucb[64];

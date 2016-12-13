@@ -38,9 +38,14 @@ class OTP{
     int do_genmove(){
         
         int ML[64],*MLED(B.get_valid_move(ML));
-        int legel_cnt=0;
         int node_ucb_list[64];
         int best_move;
+        int depth = 10;
+        int re_simu_size = 10;
+        int pre_win=0, re_simu_win=0;
+        int pre_loss=0, re_simu_loss=0;
+        int idx=0;
+        int min_max=0;
         // If there is no legel move, return directly
         if (MLED==ML){
         	do_play(8,0);
@@ -49,13 +54,38 @@ class OTP{
         else{
             Tree tree;
             tree.set_root(B.a, B.get_my_tile());
-            while (*MLED != *(ML+legel_cnt)){
-                legel_cnt++;
+
+            for (int i=0; i<depth; i++){
+                if (tree.get_have_branch()==0){
+                    pre_win = tree.get_win();
+                    pre_loss = tree.get_loss();
+                    initial_sampling(tree, MLED, ML);
+                    for (int j=0; j<re_simu_size; j++){
+                        re_simulation(tree);
+                    }
+                    re_simu_win = tree.get_win() - pre_win;
+                    re_simu_loss = tree.get_loss() - pre_loss;
+                    while(tree.nowPtr->parent != 0){
+                        idx = tree.get_id();
+                        tree.backtract();
+                        tree.update(re_simu_win, re_simu_loss, re_simu_win+re_simu_loss);
+                        tree.update_one_branch(idx);
+                    }
+                    min_max = 0;    
+                }
+                else{
+                    // update all branch from this node
+                    tree.update_branch_ucb_acc(tree.get_branch_size(), 100);
+                    if(min_max%2==0)
+                        tree.forward(tree.get_highest_ucb_index());
+                    else
+                        tree.forward(tree.get_lowest_ucb_index());
+                    min_max++;
+                }
             }
-            tree.set_branch_size(legel_cnt);
-            initial_sampling(tree, ML);
-            for (int i=0; i<20; i++){
-                re_simulation(tree);
+            // go back to root
+            while(tree.nowPtr->parent != 0){
+                tree.backtract();
             }
             best_move = ML[tree.get_highest_acc_index()];
             B.reset_board((tree.nowPtr->map), (tree.nowPtr)->my_tile);
@@ -65,17 +95,18 @@ class OTP{
     	return best_move;
     }
 
-    void initial_sampling(Tree tree, int* ML){
+    void initial_sampling(Tree tree, int *MLED, int* ML){
         int initial_sampling_size=1000;
         int pre_xy, xy, win, loss, pass, score;
+        int legel_cnt=0;
 
         // reset map
-        for (int i=0; i<8; i++){
-            for (int j=0; j<8; j++){
-                B.a[i][j] = (tree.nowPtr)->map[i][j];
-            }
-        }
-
+        B.reset_board((tree.nowPtr)->map, (tree.nowPtr)->my_tile);
+        
+        while (*MLED != *(ML+legel_cnt))
+                legel_cnt++;
+        tree.set_branch_size(legel_cnt);
+            
         for (int i=0; i<tree.get_branch_size(); i++){
             pre_xy = *(ML+i);
             win = 0;
@@ -86,7 +117,7 @@ class OTP{
             for (int s=0; s<initial_sampling_size; s++){
                 B.simulate_update(pre_xy/8,pre_xy%8);
                 
-                tree.generate_new_branch(B.a, i);
+                tree.generate_new_branch(B.a, i, (tree.nowPtr)->my_tile);
 
                 while (pass!=2){
                     xy = random_move();
@@ -126,11 +157,7 @@ class OTP{
         
         tree.forward(idx);
         // reset map
-        for (int i=0; i<8; i++){
-            for (int j=0; j<8; j++){
-                B.a[i][j] = (tree.nowPtr)->map[i][j];
-            }
-        }
+        B.reset_board((tree.nowPtr)->map, (tree.nowPtr)->my_tile);
 
         // simulation
         for (int i=0; i<redo_size; i++){
