@@ -24,6 +24,7 @@ public:
     unsigned char a[8][8];
     
     // Construct board.
+    
     constexpr board():a{
         {0,0,0,0,0,0,0,0,},
         {0,0,0,0,0,0,0,0,},

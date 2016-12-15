@@ -73,7 +73,7 @@ void Tree::update_branch_ucb_acc(int size, int idx){
    if(idx!=100){
       for (int i=0; i<size; i++){
          tmpNode = nowPtr->branch[i];
-         nowPtr->branch_ucb[i] = (double)tmpNode->win/tmpNode->total + 1.18*sqrt(log(nowPtr->total)/tmpNode->total);
+         nowPtr->branch_ucb[i] = 1.126*sqrt(log(nowPtr->total)/tmpNode->total);
       }
       tmpNode = nowPtr->branch[idx];
       nowPtr->branch_acc[idx] = (double) tmpNode->win/tmpNode->total;
@@ -81,7 +81,7 @@ void Tree::update_branch_ucb_acc(int size, int idx){
    else{
       for (int i=0; i<size; i++){
          tmpNode = nowPtr->branch[i];
-         nowPtr->branch_ucb[i] = (double)tmpNode->win/tmpNode->total + 1.18*sqrt(log(nowPtr->total)/tmpNode->total);
+         nowPtr->branch_ucb[i] = 1.126*sqrt(log(nowPtr->total)/tmpNode->total);
          nowPtr->branch_acc[idx] = (double) tmpNode->win/tmpNode->total;
       }
    }
@@ -90,7 +90,7 @@ void Tree::update_branch_ucb_acc(int size, int idx){
 void Tree::update_one_branch(int idx){
    TreeNode *tmpNode;
    tmpNode = nowPtr->branch[idx];
-   nowPtr->branch_ucb[idx] = (double)tmpNode->win/tmpNode->total + 1.18*sqrt(log(nowPtr->total)/tmpNode->total);
+   nowPtr->branch_ucb[idx] = 1.126*sqrt(log(nowPtr->total)/tmpNode->total);
    nowPtr->branch_acc[idx] = (double) tmpNode->win/tmpNode->total;
 }
 
@@ -128,10 +128,11 @@ int Tree::get_have_branch(){
 
 int Tree::get_highest_ucb_index(){
    int idx=0;
-   double tmp=0;
+   double pocket=0, tmp=0;
    for(int i=0; i<(*nowPtr).branch_size; i++){
-      if(tmp < (*nowPtr).branch_ucb[i]){
-         tmp = (*nowPtr).branch_ucb[i];
+      tmp = (*nowPtr).branch_acc[i] + (*nowPtr).branch_ucb[i];
+      if(pocket < tmp && nowPtr->branch[i]->enable==1){
+         pocket = tmp;
          idx = i;
       }
    }
@@ -140,10 +141,11 @@ int Tree::get_highest_ucb_index(){
 
 int Tree::get_lowest_ucb_index(){
    int idx=0;
-   double tmp=1000;
+   double pocket=0, tmp=0;
    for(int i=0; i<(*nowPtr).branch_size; i++){
-      if(tmp > (*nowPtr).branch_ucb[i]){
-         tmp = (*nowPtr).branch_ucb[i];
+      tmp = (1.0-(*nowPtr).branch_acc[i]) + (*nowPtr).branch_ucb[i];
+      if(pocket < tmp && nowPtr->branch[i]->enable==1){
+         pocket = tmp;
          idx = i;
       }
    }

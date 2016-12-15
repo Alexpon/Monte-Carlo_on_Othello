@@ -10,6 +10,7 @@ class TreeNode{
       total = 0;
       branch_size = 0;
       have_branch = 0;
+      enable = 1;
     }
 
 //private:
@@ -21,6 +22,9 @@ class TreeNode{
    int branch_size;
    double branch_ucb[64];
    double branch_acc[64];
+   double branch_mean_m_std[64];
+   double branch_mean_p_std[64];
    int have_branch;
    int my_tile;
+   int enable;
 };
